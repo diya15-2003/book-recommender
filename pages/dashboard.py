@@ -12,10 +12,6 @@ import plotly.graph_objects as go
 from urllib.parse import quote
 import json
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 
 
 # Check login status before showing dashboard
@@ -189,7 +185,7 @@ def initialize_embeddings():
         load_dotenv()
         file_path = r"D:\book recommender\tagged_description.txt"
         raw_documents = TextLoader(file_path, encoding='utf-8').load()
-        text_splitter = CharacterTextSplitter(separator="\n", chunk_size=0, chunk_overlap=0)
+        text_splitter = CharacterTextSplitter(chunk_size = 0, chunk_overlap = 0, separator="\n")
         documents = text_splitter.split_documents(raw_documents)
         embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         db_books = Chroma.from_documents(documents, embedding_model)
@@ -280,7 +276,7 @@ def get_buy_links(title, authors):
     """Generate purchase links for the book"""
     search_query = f"{title} {authors}".replace(" ", "+")
     return {
-        "Amazon": f"https://www.amazon.com/s?k={search_query}&i=stripbooks",
+        "Amazon": f"https://www.amazon.in/s?k={search_query}&i=stripbooks",
         "Goodreads": f"https://www.goodreads.com/search?q={search_query}",
         "Google Books": f"https://www.google.com/search?tbm=bks&q={search_query}"
     }
@@ -571,7 +567,7 @@ with st.sidebar:
     st.markdown("---")
 
     # Direct menu buttons
-    menu_options = [" Search Books", " Discussions", " Library Stats", " About"]
+    menu_options = [" Search Books", " Discussions"]
     
     for option in menu_options:
         button_class = "active" if st.session_state.current_page == option else ""
@@ -1078,92 +1074,5 @@ elif st.session_state.current_page == " Discussions":
                             st.divider()
                 
                 # BookClubs.com link at the end
-                st.markdown("**For more further discussions, look at this page or connect with more people: [BookClubs.com](https://bookclubs.com/discussions)")
+                #st.markdown("**For more further discussions, look at this page or connect with more people: [BookClubs.com](https://bookclubs.com/discussions)")
         
-
-elif st.session_state.current_page == " Library Stats":
-    st.header(" Library Statistics")
-    
-    # Overview metrics
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("📚 Total Books", f"{len(books):,}")
-    with col2:
-        st.metric("📖 Avg Rating", f"{books['average_rating'].mean():.2f}")
-    with col3:
-        st.metric("📄 Avg Pages", f"{int(books['num_pages'].mean()):,}")
-    with col4:
-        st.metric("🏷️ Categories", books['simple_categories'].nunique())
-    
-    # Charts
-    col1, col2 = st.columns(2)
-    with col1:
-        category_counts = books['simple_categories'].value_counts().head(10)
-        fig_cat = px.bar(
-            x=category_counts.values, y=category_counts.index,
-            orientation='h', title="📚 Books by Category",
-            color=category_counts.values, color_continuous_scale="viridis"
-        )
-        fig_cat.update_layout(yaxis={'categoryorder':'total ascending'})
-        st.plotly_chart(fig_cat, use_container_width=True)
-    
-    with col2:
-        fig_rating = px.histogram(
-            books, x='average_rating', nbins=20,
-            title="⭐ Rating Distribution",
-            color_discrete_sequence=['#667eea']
-        )
-        st.plotly_chart(fig_rating, use_container_width=True)
-    
-    # Emotion analysis
-    emotion_cols = ['joy', 'anger', 'fear', 'sadness', 'suprise', 'neutral']
-    emotion_means = books[emotion_cols].mean()
-    
-    fig_emotions = px.bar(
-        x=emotion_means.index, y=emotion_means.values,
-        title="🎭 Average Emotional Content Across All Books",
-        color=emotion_means.values, color_continuous_scale="plasma"
-    )
-    st.plotly_chart(fig_emotions, use_container_width=True)
-
-elif st.session_state.current_page == " About":
-    st.header("ℹ️ About BookMind")
-    
-    st.markdown("""
-    ### 🤖 About BookMind
-
-    BookMind is an AI-powered book recommendation system that uses advanced natural language processing 
-    to understand your reading preferences and find books that match your interests.
-
-    **🔧 Features:**
-    - **Semantic Search**: Describe what you want to read in natural language
-    - **Emotion Analysis**: Books are analyzed for emotional content (joy, sadness, fear, etc.)
-    - **Category Filtering**: Browse by genre and category
-    - **Favorites System**: Save books to your personal collection with the heart ❤️ button
-    - **Detailed Information**: View descriptions, ratings, and purchase links
-    - **Interactive UI**: Modern, responsive design for the best user experience
-    - **Persistent Favorites**: Your favorite books are saved and will persist across sessions
-
-    **🧠 How it works:**
-    1. Book descriptions are processed using sentence transformers
-    2. Your query is embedded in the same semantic space
-    3. Similar books are found using vector similarity
-    4. Results are filtered and sorted by your preferences
-
-    **💡 Tips for better results:**
-    - Be descriptive about themes, settings, or emotions you want
-    - Try different emotional tones to discover new books
-    - Use the category filter to narrow down results
-    - Click the heart ❤️ to save books to your favorites
-    - Visit your profile to see all your saved books
-    - Your favorites are automatically saved and will be there when you log back in
-
-    **❤️ Using Favorites:**
-    - Click the white heart 🤍 on any book to add it to your favorites
-    - The heart will turn red ❤️ immediately to show it's saved
-    - Click the red heart ❤️ again to remove from favorites
-    - View all your favorites in your profile section
-    - Your favorites are saved to your account and persist across login sessions
-
-    Built with ❤️ using Streamlit, LangChain, and Hugging Face Transformers.
-    """)
